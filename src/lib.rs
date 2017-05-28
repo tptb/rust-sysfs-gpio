@@ -460,6 +460,7 @@ impl Pin {
 #[derive(Debug)]
 pub struct PinConfiguration {
     pin_num: u64,
+    file_value: File,
     file_dir: File,
     file_edge: File,
 }
@@ -469,9 +470,16 @@ impl PinConfiguration {
         let file_dir = File::create(&format!("/sys/class/gpio/gpio{}/direction", pin_num))?;
         let file_edge = File::create(&format!("/sys/class/gpio/gpio{}/edge", pin_num))?;
 
+        let file_value = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(&format!("/sys/class/gpio/gpio{}/value", pin_num))?;
+
         Ok(PinConfiguration {
             pin_num: pin_num,
             file_dir: file_dir,
+            file_value: file_value,
             file_edge: file_edge,
         })
     }
@@ -494,6 +502,24 @@ impl PinConfiguration {
                                            Edge::FallingEdge => "falling",
                                            Edge::BothEdges => "both",
         }.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn get_value(&mut self) -> Result<u8> {
+        let mut value = String::new();
+        self.file_value.read_to_string(&mut value)?;
+        match value.trim() {
+            "1" => Ok(1),
+            "0" => Ok(0),
+            other => Err(Error::Unexpected(format!("value file contents {}", other))),
+        }
+    }
+    pub fn set_value(&mut self, value: u8) -> Result<()> {
+        self.file_value.write_all(match value {
+                                        0 => "0",
+                                        _ => "1",
+                                    }.as_bytes())?;
 
         Ok(())
     }
