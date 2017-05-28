@@ -414,8 +414,8 @@ impl Pin {
         PinPoller::new(self.pin_num)
     }
 
-    pub fn get_config(&self) -> Result<PinConfiguration> {
-        PinConfiguration::new(self.pin_num)
+    pub fn get_fast(&self) -> Result<PinFast> {
+        PinFast::new(self.pin_num)
     }
 
     /// Get an AsyncPinPoller object for this pin
@@ -458,15 +458,19 @@ impl Pin {
 }
 
 #[derive(Debug)]
-pub struct PinConfiguration {
+pub struct PinFast {
     pin_num: u64,
     file_value: File,
     file_dir: File,
     file_edge: File,
 }
 
-impl PinConfiguration {
-    pub fn new(pin_num: u64) -> Result<PinConfiguration> {
+impl PinFast {
+    pub fn new(pin_num: u64) -> Result<PinFast> {
+        {
+            let pin = Pin::new(pin_num);
+            pin.export()?;
+        }
         let file_dir = File::create(&format!("/sys/class/gpio/gpio{}/direction", pin_num))?;
         let file_edge = File::create(&format!("/sys/class/gpio/gpio{}/edge", pin_num))?;
 
@@ -476,7 +480,7 @@ impl PinConfiguration {
             .create(true)
             .open(&format!("/sys/class/gpio/gpio{}/value", pin_num))?;
 
-        Ok(PinConfiguration {
+        Ok(PinFast {
             pin_num: pin_num,
             file_dir: file_dir,
             file_value: file_value,
@@ -523,6 +527,13 @@ impl PinConfiguration {
                                     }.as_bytes())?;
 
         Ok(())
+    }
+}
+
+impl Drop for PinFast {
+    fn drop(&mut self) {
+        let pin = Pin::new(self.pin_num);
+        let _ = pin.unexport();
     }
 }
 
