@@ -483,6 +483,7 @@ impl PinConfiguration {
                                            Direction::High => "high",
                                            Direction::Low => "low",
                                        }.as_bytes())?;
+        self.file_dir.flush()?;
 
         Ok(())
     }
@@ -494,6 +495,7 @@ impl PinConfiguration {
                                            Edge::FallingEdge => "falling",
                                            Edge::BothEdges => "both",
         }.as_bytes())?;
+        self.file_edge.flush()?;
 
         Ok(())
     }
