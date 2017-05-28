@@ -414,6 +414,10 @@ impl Pin {
         PinPoller::new(self.pin_num)
     }
 
+    pub fn get_config(&self) -> Result<PinConfiguration> {
+        PinConfiguration::new(self.pin_num)
+    }
+
     /// Get an AsyncPinPoller object for this pin
     ///
     /// The async pin poller object can be used with the `mio` crate. You should probably call
@@ -450,6 +454,48 @@ impl Pin {
     #[cfg(feature = "tokio")]
     pub fn get_value_stream(&self, handle: &Handle) -> Result<PinValueStream> {
         Ok(PinValueStream(try!(PinStream::init(self.clone(), handle))))
+    }
+}
+
+#[derive(Debug)]
+pub struct PinConfiguration {
+    pin_num: u64,
+    file_dir: File,
+    file_edge: File,
+}
+
+impl PinConfiguration {
+    pub fn new(pin_num: u64) -> Result<PinConfiguration> {
+        let file_dir = File::open(&format!("/sys/class/gpio/gpio{}/direction", pin_num))?;
+        let file_edge = File::open(&format!("/sys/class/gpio/gpio{}/edge", pin_num))?;
+
+        Ok(PinConfiguration {
+            pin_num: pin_num,
+            file_dir: file_dir,
+            file_edge: file_edge,
+        })
+    }
+
+    pub fn set_direction(&mut self, dir: Direction) -> Result<()> {
+        self.file_dir.write_all(match dir {
+                                           Direction::In => "in",
+                                           Direction::Out => "out",
+                                           Direction::High => "high",
+                                           Direction::Low => "low",
+                                       }.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn set_edge(&mut self, edge: Edge) -> Result<()> {
+        self.file_edge.write_all(match edge {
+                                           Edge::NoInterrupt => "none",
+                                           Edge::RisingEdge => "rising",
+                                           Edge::FallingEdge => "falling",
+                                           Edge::BothEdges => "both",
+        }.as_bytes())?;
+
+        Ok(())
     }
 }
 
