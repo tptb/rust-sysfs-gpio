@@ -507,7 +507,7 @@ impl PinConfiguration {
     }
 
     pub fn get_value(&mut self) -> Result<u8> {
-        let mut value = String::new();
+        let mut value = String::with_capacity(10);
         self.file_value.read_to_string(&mut value)?;
         match value.trim() {
             "1" => Ok(1),
