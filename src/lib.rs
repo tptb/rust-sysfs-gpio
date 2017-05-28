@@ -466,8 +466,8 @@ pub struct PinConfiguration {
 
 impl PinConfiguration {
     pub fn new(pin_num: u64) -> Result<PinConfiguration> {
-        let file_dir = File::open(&format!("/sys/class/gpio/gpio{}/direction", pin_num))?;
-        let file_edge = File::open(&format!("/sys/class/gpio/gpio{}/edge", pin_num))?;
+        let file_dir = File::create(&format!("/sys/class/gpio/gpio{}/direction", pin_num))?;
+        let file_edge = File::create(&format!("/sys/class/gpio/gpio{}/edge", pin_num))?;
 
         Ok(PinConfiguration {
             pin_num: pin_num,
@@ -483,7 +483,6 @@ impl PinConfiguration {
                                            Direction::High => "high",
                                            Direction::Low => "low",
                                        }.as_bytes())?;
-        self.file_dir.flush()?;
 
         Ok(())
     }
@@ -495,7 +494,6 @@ impl PinConfiguration {
                                            Edge::FallingEdge => "falling",
                                            Edge::BothEdges => "both",
         }.as_bytes())?;
-        self.file_edge.flush()?;
 
         Ok(())
     }
